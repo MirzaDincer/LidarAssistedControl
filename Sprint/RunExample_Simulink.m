@@ -15,7 +15,7 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
@@ -26,7 +26,7 @@ switch LidarType
         LDP.NumberOfBeams       = 4;            % [-]       Number of beams measuring at different directions               
         LDP.AngleToCenterline   = 19.176;       % [deg]     Angle around centerline
         LDP.IndexGate           = 6;            % [-]       IndexGate
-        LDP.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
+        LDP.FlagLPF             = 1;            % [0/1]     Enable low-pass filter (flag)
         LDP.omega_cutoff        = 0.1232;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
         LDP.T_buffer            = 5.5;          % [s]       Buffer time for filtered REWS signal
     case 'CircularCW'
@@ -36,8 +36,14 @@ switch LidarType
         LDP.IndexGate           = 1;            % [-]       IndexGate
         LDP.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
         LDP.omega_cutoff        = 0.3268;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
+        % LDP.omega_cutoff        = 0.5;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
         LDP.T_buffer            = 7.5;          % [s]       Buffer time for filtered REWS signal        
+        % LDP.T_buffer            = 7;          % [s]       Buffer time for filtered REWS signal        
 end
+
+% Individual pitch controller
+FBFF.IPC.Kp = 1e-9;
+FBFF.IPC.Ti = 20;
 
 % define FAST input file
 SimulationName      = ['IEA-15-240-RWT-Monopile_Simulink_',LidarType];
@@ -58,7 +64,7 @@ R.StaticPitch       = [0         0    0.0552    0.1085    0.1451    0.1749    0.
 clear FAST_SFunc 
 clear OpenFAST_ROSCO_LDP_FFP
 R.FlagLAC           = 0; % Disable LAC
-SimOutFB            = sim('OpenFAST_ROSCO_LDP_FFP.slx',[0,TMax]);
+SimOutFB            = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
 movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FB.outb'])      % store results
 
 %% Run FBFF
@@ -105,6 +111,28 @@ ylabel({'TwrBsMyt';'[MNm]'});
 xlabel('time [s]')
 linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
 xlim([20 50])
+
+figure(2);
+hold on; grid on; box on
+plot(FB.Time,       FB.BldPitch2);
+plot(FBFF.Time,     FBFF.BldPitch2);
+ylabel({'BldPitch2'; '[deg]'});
+legend('feedback only','feedback-feedforward','Location','best')
+
+figure(3);
+hold on; grid on; box on
+plot(FB.Time,       FB.BldPitch3);
+plot(FBFF.Time,     FBFF.BldPitch3);
+ylabel({'BldPitch3'; '[deg]'});
+legend('feedback only','feedback-feedforward','Location','best')
+
+figure(4);
+hold on; grid on; box on
+plot(FBFF.Time,     FBFF.BldPitch1);
+plot(FBFF.Time,     FBFF.BldPitch2);
+plot(FBFF.Time,     FBFF.BldPitch3);
+ylabel({'BldPitch3'; '[deg]'});
+legend('feedback only','feedback-feedforward','Location','best')
 
 % display results
 RotSpeed_0  = 7.56;     % [rpm]
