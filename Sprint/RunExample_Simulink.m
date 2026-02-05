@@ -41,9 +41,6 @@ switch LidarType
         % LDP.T_buffer            = 7;          % [s]       Buffer time for filtered REWS signal        
 end
 
-% Individual pitch controller
-FBFF.IPC.Kp = 1e-9;
-FBFF.IPC.Ti = 20;
 
 % define FAST input file
 SimulationName      = ['IEA-15-240-RWT-Monopile_Simulink_',LidarType];
@@ -55,6 +52,12 @@ fast.FAST_directory = cd;
 P                   = ReadWrite_FAST(fast);
 simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
+
+% Individual pitch controller
+R.IPC_ControlMode = 1;
+R.IPC_KP_1P = 1e-9;
+R.IPC_KI_1P = 20;
+R.IPC_TI =R.IPC_KP_1P/R.IPC_KI_1P;
 
 % add FF Parameter from FFP_v1.IN
 R.StaticWind        = [0   10.0000   11.0000   12.0000   13.0000   14.0000   15.0000   16.0000   17.0000   18.0000   19.0000   20.0000   21.0000   22.0000   23.0000   24.0000   25.0000   26.0000   27.0000   28.0000   29.0000   30.0000]; % Wind speed  values in static pitch curve [m/s]
@@ -71,7 +74,7 @@ movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FB.outb'])      % stor
 clear FAST_SFunc 
 clear OpenFAST_ROSCO_LDP_FFP
 R.FlagLAC           = 1; % Enable LAC
-SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP.slx',[0,TMax]);
+SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
 movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFF.outb'])    % store results
 
 %% Comparison
@@ -112,27 +115,22 @@ xlabel('time [s]')
 linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
 xlim([20 50])
 
-figure(2);
-hold on; grid on; box on
-plot(FB.Time,       FB.BldPitch2);
-plot(FBFF.Time,     FBFF.BldPitch2);
-ylabel({'BldPitch2'; '[deg]'});
-legend('feedback only','feedback-feedforward','Location','best')
-
-figure(3);
-hold on; grid on; box on
-plot(FB.Time,       FB.BldPitch3);
-plot(FBFF.Time,     FBFF.BldPitch3);
-ylabel({'BldPitch3'; '[deg]'});
-legend('feedback only','feedback-feedforward','Location','best')
-
 figure(4);
+hold on; grid on; box on
+plot(FBFF.Time,     FBFF.RootMyb1);
+plot(FBFF.Time,     FBFF.RootMyb2);
+plot(FBFF.Time,     FBFF.RootMyb3);
+ylabel({'RootMyb'; '[deg]'});
+legend('feedback only','feedback-feedforward','Location','best')
+
+figure(5);
 hold on; grid on; box on
 plot(FBFF.Time,     FBFF.BldPitch1);
 plot(FBFF.Time,     FBFF.BldPitch2);
 plot(FBFF.Time,     FBFF.BldPitch3);
-ylabel({'BldPitch3'; '[deg]'});
+ylabel({'RootMyb'; '[deg]'});
 legend('feedback only','feedback-feedforward','Location','best')
+
 
 % display results
 RotSpeed_0  = 7.56;     % [rpm]
