@@ -15,15 +15,15 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
 
 % IPC parameters
 IPC = [];
-IPC.FF.gV = 1; %static gain for Vertical component
-IPC.FF.gH = 1; %static gain for Horizontal component
+IPC.FF.gV = 0.5; %static gain for Vertical component
+IPC.FF.gH = 0.1; %static gain for Horizontal component
 
 switch LidarType
     case '4BeamPulsed'
@@ -63,6 +63,7 @@ P                   = ReadWrite_FAST(fast);
 simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
 
+verticalShear       = 0.0167; % [(m/s)/m]
 
 % add FF Parameter from FFP_v1.IN
 R.StaticWind        = [0   10.0000   11.0000   12.0000   13.0000   14.0000   15.0000   16.0000   17.0000   18.0000   19.0000   20.0000   21.0000   22.0000   23.0000   24.0000   25.0000   26.0000   27.0000   28.0000   29.0000   30.0000]; % Wind speed  values in static pitch curve [m/s]
@@ -76,11 +77,11 @@ SimOutFB            = sim('OpenFAST_ROSCO_LDP_FFP.slx',[0,TMax]);
 movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FB.outb'])      % store results
 
 %% Run FB with IPC
-clear FAST_SFunc 
-clear OpenFAST_ROSCO_LDP_FFP_with_IPC
-R.FlagLAC           = 0; % Disable LAC
-SimOutFB            = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
-movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBIPC.outb'])      % store results
+% clear FAST_SFunc 
+% clear OpenFAST_ROSCO_LDP_FFP_with_IPC
+% R.FlagLAC           = 0; % Disable LAC
+% SimOutFB            = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
+% movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBIPC.outb'])      % store results
 
 %% Run FBFF
 clear FAST_SFunc 
@@ -91,16 +92,16 @@ movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFF.outb'])    % stor
 
 %% Run FBFF with IPC
 clear FAST_SFunc 
-clear OpenFAST_ROSCO_LDP_FFP_with_IPC
+clear OpenFAST_ROSCO_LDP_FFP_with_FFIPC
 R.FlagLAC           = 1; % Enable LAC
-SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
+SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_FFIPC.slx',[0,TMax]);
 movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFFIPC.outb'])    % store results
 
 %% Comparison
 % read in data
 FB              = ReadFASTbinaryIntoStruct([SimulationName,'_FB.outb']);
 FBFF            = ReadFASTbinaryIntoStruct([SimulationName,'_FBFF.outb']);
-FBIPC           = ReadFASTbinaryIntoStruct([SimulationName,'_FBIPC.outb']);
+% FBIPC           = ReadFASTbinaryIntoStruct([SimulationName,'_FBIPC.outb']);
 FBFFIPC         = ReadFASTbinaryIntoStruct([SimulationName,'_FBFFIPC.outb']);
 
 % Plot 
@@ -117,16 +118,17 @@ subplot(4,1,2);
 hold on; grid on; box on
 plot(FB.Time,       FB.BldPitch1);
 plot(FBFF.Time,     FBFF.BldPitch1);
-plot(FBIPC.Time,     FBIPC.BldPitch1);
+% plot(FBIPC.Time,     FBIPC.BldPitch1);
 plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
 ylabel({'BldPitch1'; '[deg]'});
-legend('feedback only','feedback-feedforward','feedback only with IPC','feedback-feedforward with IPC' ,'Location','best')
+% legend('feedback only','feedback-feedforward','feedback only with IPC','feedback-feedforward with IPC' ,'Location','best')
+legend('feedback only','feedback-feedforward','feedback-feedforward with IPC' ,'Location','best')
 
 subplot(4,1,3);
 hold on; grid on; box on
 plot(FB.Time,       FB.RotSpeed);
 plot(FBFF.Time,     FBFF.RotSpeed);
-plot(FBIPC.Time,     FBIPC.RotSpeed);
+% plot(FBIPC.Time,     FBIPC.RotSpeed);
 plot(FBFFIPC.Time,     FBFFIPC.RotSpeed);
 ylabel({'RotSpeed';'[rpm]'});
 
@@ -134,7 +136,7 @@ subplot(4,1,4);
 hold on; grid on; box on
 plot(FB.Time,       FB.TwrBsMyt/1e3);
 plot(FBFF.Time,     FBFF.TwrBsMyt/1e3);
-plot(FBIPC.Time,     FBIPC.TwrBsMyt/1e3);
+% plot(FBIPC.Time,     FBIPC.TwrBsMyt/1e3);
 plot(FBFFIPC.Time,     FBFFIPC.TwrBsMyt/1e3);
 ylabel({'TwrBsMyt';'[MNm]'});
 
@@ -171,4 +173,4 @@ Cost = (max(abs(FBFFIPC.RotSpeed(FBFFIPC.Time>=t_Start)-RotSpeed_0))) / RotSpeed
      + (max(abs(FBFFIPC.TwrBsMyt(FBFFIPC.Time>=t_Start)-TwrBsMyt_0))) / TwrBsMyt_0;
 
 fprintf('Cost for Summer Games 2024 (feedback only) ("30 s sprint"):  %f \n',Cost_FB);
-fprintf('Cost for Summer Games 2024 ("30 s sprint"):  %f \n',Cost);
+fprintf('Cost for Summer Games 2024 ("FF_IPC"):  %f \n',Cost);
