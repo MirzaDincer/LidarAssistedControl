@@ -23,7 +23,7 @@ TMax                = 50; % [s]
 % IPC parameters
 IPC = [];
 IPC.FF.gV = 0.11; %static gain for Vertical component
-IPC.FF.gH = 0.11; %static gain for Horizontal component
+IPC.FF.gH = 0.41; %static gain for Horizontal component
 
 switch LidarType
     case '4BeamPulsed'
