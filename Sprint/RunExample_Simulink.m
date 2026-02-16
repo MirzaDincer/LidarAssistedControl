@@ -22,8 +22,8 @@ TMax                = 50; % [s]
 
 % IPC parameters
 IPC = [];
-IPC.FF.gV = 0.5; %static gain for Vertical component
-IPC.FF.gH = 0.1; %static gain for Horizontal component
+IPC.FF.gV = 0.11; %static gain for Vertical component
+IPC.FF.gH = 0.11; %static gain for Horizontal component
 
 switch LidarType
     case '4BeamPulsed'
@@ -31,7 +31,7 @@ switch LidarType
         LDP.NumberOfBeams       = 4;            % [-]       Number of beams measuring at different directions               
         LDP.AngleToCenterline   = 19.176;       % [deg]     Angle around centerline
         LDP.IndexGate           = 6;            % [-]       IndexGate
-        LDP.FlagLPF             = 1;            % [0/1]     Enable low-pass filter (flag)
+        LDP.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
         LDP.omega_cutoff        = 0.1232;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
         LDP.T_buffer            = 5.5;          % [s]       Buffer time for filtered REWS signal
         IPC.FB.Kp = 5.3e-7;

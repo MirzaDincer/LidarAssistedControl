@@ -1,5 +1,6 @@
 clear all; close all; clc;
 
+% from WriteECD2BladedWind.m
 z_r = 150 ; % [m] HH
 u_r = 12.5; % [m/s] HH wind speed 
 alfa = 0.2;
