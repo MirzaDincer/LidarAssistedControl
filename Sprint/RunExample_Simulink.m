@@ -15,7 +15,7 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
+LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
@@ -34,8 +34,11 @@ switch LidarType
         LDP.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
         LDP.omega_cutoff        = 0.1232;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
         LDP.T_buffer            = 5.5;          % [s]       Buffer time for filtered REWS signal
-        IPC.FB.Kp = 5.3e-7;
-        IPC.FB.Ti = 4;
+        [Y, Z]                  = calculateposlidbeams('LidarFile_4BeamPulsed.dat' , LDP.IndexGate, LDP.NumberOfBeams);
+        LDP.Ycoord              = Y;
+        LDP.Zcoord              = Z;
+        IPC.FB.Kp               = 5.3e-7;
+        IPC.FB.Ti               = 4;
     case 'CircularCW'
         % configuration from LDP_v1_CircularCW.IN and FFP_v1_CircularCW.IN
         LDP.NumberOfBeams       = 50;           % [-]       Number of beams measuring at different directions               
@@ -43,9 +46,10 @@ switch LidarType
         LDP.IndexGate           = 1;            % [-]       IndexGate
         LDP.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
         LDP.omega_cutoff        = 0.3268;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
-        % LDP.omega_cutoff        = 0.5;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
         LDP.T_buffer            = 7.5;          % [s]       Buffer time for filtered REWS signal        
-        % LDP.T_buffer            = 7;          % [s]       Buffer time for filtered REWS signal     
+        [Y, Z]                  = calculateposlidbeams('LidarFile_CircularCW.dat' , LDP.IndexGate, LDP.NumberOfBeams);
+        LDP.Ycoord              = Y;
+        LDP.Zcoord              = Z;
         % Individual pitch controller
         IPC.FB.Kp = 5.3e-7;
         IPC.FB.Ti = 4;
@@ -92,9 +96,9 @@ movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFF.outb'])    % stor
 
 %% Run FBFF with IPC
 clear FAST_SFunc 
-clear OpenFAST_ROSCO_LDP_FFP_with_FFIPC
+clear OpenFAST_ROSCO_LDP_FFP_with_IPC
 R.FlagLAC           = 1; % Enable LAC
-SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_FFIPC.slx',[0,TMax]);
+SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
 movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFFIPC.outb'])    % store results
 
 %% Comparison
