@@ -59,5 +59,5 @@ elseif NumberOfBeams == 50
         
 end
 
-    [~,Y,Z] = sph2cart(azimuth,elevation,range_gate);
+    [~,Y,Z] = sph2cart(deg2rad(azimuth),deg2rad(elevation),range_gate);
 end

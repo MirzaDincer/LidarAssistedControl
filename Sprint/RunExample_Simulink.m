@@ -15,7 +15,7 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
@@ -23,7 +23,7 @@ TMax                = 50; % [s]
 % IPC parameters
 IPC = [];
 IPC.FF.gV = 0.11; %static gain for Vertical component
-IPC.FF.gH = 0.41; %static gain for Horizontal component
+IPC.FF.gH = 0.11; %static gain for Horizontal component
 
 switch LidarType
     case '4BeamPulsed'
@@ -98,7 +98,7 @@ movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFF.outb'])    % stor
 clear FAST_SFunc 
 clear OpenFAST_ROSCO_LDP_FFP_with_IPC
 R.FlagLAC           = 1; % Enable LAC
-SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
+SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_FFIPC.slx',[0,TMax]);
 movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFFIPC.outb'])    % store results
 
 %% Comparison
