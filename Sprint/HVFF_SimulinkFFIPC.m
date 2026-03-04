@@ -30,6 +30,7 @@ IPC = [];
 verticalGains = 0.06 : 0.01 : 0.16; %static gain for Vertical component
 % horizontalGains = 0.06 : 0.01 : 0.16; %static gain for Horizontal component
 
+
 switch LidarType
     case '4BeamPulsed'
         % configuration from LDP_v1_4BeamPulsed.IN and FFP_v1_4BeamPulsed.IN
@@ -68,6 +69,10 @@ simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
 
 verticalShear       = 0.02; % [(m/s)/m], 
+
+% phase offset
+deltat = .9; %s
+LDP.deltaphi = R.PC_RefSpd*deltat;
 
 % add FF Parameter from FFP_v1.IN
 R.StaticWind        = [0   10.0000   11.0000   12.0000   13.0000   14.0000   15.0000   16.0000   17.0000   18.0000   19.0000   20.0000   21.0000   22.0000   23.0000   24.0000   25.0000   26.0000   27.0000   28.0000   29.0000   30.0000]; % Wind speed  values in static pitch curve [m/s]
