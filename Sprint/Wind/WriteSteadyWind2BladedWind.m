@@ -40,7 +40,7 @@ alpha       = 0.2;                                  % [-]   shear exponent for N
 z_hub       = HubHeight;
 z           = [-(Nz-1)/2:1:(Nz-1)/2]*dz+HubHeight;  % [m]   vertical coordinates of the grid
 % V_z         = V_hub*(z/z_hub).^alpha;               % [m/s] mean wind profile at each vertical grid point
-m           = 0.0167; % [(m/s)/m]
+m           = 0.02; % [(m/s)/m]
 V_z         = V_hub + m*(z - z_hub);   % [m/s] wind profile with linear shear
 
 % --- Steady wind magnitude with shear ---
