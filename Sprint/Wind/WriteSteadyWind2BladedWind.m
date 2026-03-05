@@ -11,7 +11,7 @@ FileName = 'SteadyWind';
 
 %% Preprocessing
 % Time discretization
-T           = 300;                   % [s]   total simulation time
+T           = 600;                   % [s]   total simulation time
 dt          = 1/100;               	% [s]   simulation time step
 t           = 0:dt:T-dt;            % [s]   simulation time vector
 
@@ -20,8 +20,8 @@ V_hub       = 12.5;                 % [m/s] mean wind speed at hub height: v_rat
 t_start     = 30;                   % [s]   start time of gust event
 
 % Extreme coherent gust with direction change (ECD - IEC 6.3.2.5)
-V_cg        = 15;                   % [m/s] coherent gust amplitude
-T_gust      = 10;                   % [s]   rise time of coherent gust
+% V_cg        = 15;                   % [m/s] coherent gust amplitude
+% T_gust      = 10;                   % [s]   rise time of coherent gust
 
 % Grid definition
 dy          = 10;                   % [m]   lateral spacing
@@ -97,9 +97,10 @@ end
 
 % Get turbulence intensity for .sum-file
 % here we use std u for w component to avoid dividing by zero
-SummVars(4) = std(squeeze(velocity(:,1,1,1)))/URef*100;
-SummVars(5) = std(squeeze(velocity(:,2,1,1)))/URef*100;     
-SummVars(6) = std(squeeze(velocity(:,1,1,1)))/URef*100;
+TI_scale = max(std(squeeze(velocity(:,1,ceil(Ny/2),ceil(Nz/2))))/URef*100, 1.0);
+SummVars(4) = TI_scale;
+SummVars(5) = TI_scale;
+SummVars(6) = TI_scale;
 
 % Export rotor-plane wind field (.wnd + .sum) for OpenFAST
 disp('Exporting rotor plane wind field as ".wnd" binary files...')
