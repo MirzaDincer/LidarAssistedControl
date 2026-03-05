@@ -27,9 +27,7 @@ TMax                = 600; % [s]
 
 % IPC parameters
 IPC = [];
-verticalGains = 0.06 : 0.01 : 0.16; %static gain for Vertical component
-% horizontalGains = 0.06 : 0.01 : 0.16; %static gain for Horizontal component
-
+verticalGains = 1.61 : 0.01 : 1.66; %static gain for Vertical component
 
 switch LidarType
     case '4BeamPulsed'
@@ -55,6 +53,9 @@ switch LidarType
         % Individual pitch controller
         IPC.FB.Kp = 5.3e-7;
         IPC.FB.Ti = 4;
+        [Y, Z]                  = calculateposlidbeams('LidarFile_CircularCW.dat' , LDP.IndexGate, LDP.NumberOfBeams);
+        LDP.Ycoord              = Y;
+        LDP.Zcoord              = Z;
 end
 
 % define FAST input file
@@ -79,7 +80,7 @@ R.StaticWind        = [0   10.0000   11.0000   12.0000   13.0000   14.0000   15.
 R.StaticPitch       = [0         0    0.0552    0.1085    0.1451    0.1749    0.2011    0.2250    0.2473    0.2682    0.2882    0.3072    0.3255    0.3432    0.3603    0.3769    0.3930    0.4087    0.4240    0.4389    0.4535    0.4679]; % Pitch angle values in static pitch curve [rad]
 
 %% Run FBFF with IPC
-for i =1:1
+for i =1:length(verticalGains)
     clear FAST_SFunc 
     clear OpenFAST_ROSCO_LDP_FFP_with_FFIPC
     R.FlagLAC           = 1; % Enable LAC
@@ -92,16 +93,13 @@ for i =1:1
     % read in data
     FBFFIPC         = ReadFASTbinaryIntoStruct([SimulationName,'_FBFFIPC.outb']);
 
-    % % Vertical Moment in last 3 rotation
-    % M_V     = SimOutFBFF.logsout.get('M_V').Values.Data;
-    % T       = 60/FBFFIPC.RotSpeed(end); % [s] time for 1 rev
-    % T_s     = round(TMax - 3*T); % Starting second for last 3 rev
-    % idx       = find( FBFFIPC.Time == T_s ); % Starting index
-    % M_V_final(i) = mean(M_V(idx:end));
-    % 
-    % % Horizontal Moment in last 3 rotation
-    % M_H     = SimOutFBFF.logsout.get('M_H').Values.Data;
-    % M_H_final(i) = mean(M_H(idx:end));
+    % Vertical Moment in last 3 rotation
+    M_V     = SimOutFBFF.logsout.get('M_V').Values.Data;
+    T       = 60/FBFFIPC.RotSpeed(end); % [s] time for 1 rev
+    T_s     = round(TMax - 3*T); % Starting second for last 3 rev
+    idx       = find( FBFFIPC.Time == T_s ); % Starting index
+    M_V_final(i) = mean(M_V(idx:end));
+
 %%
     figure(i)
     subplot(4,1,1);
@@ -131,31 +129,35 @@ for i =1:1
     xlim([0 600])
 end
 
-%% Plot 
-% figure
-% hold on; grid on; box on
-% plot(verticalGains, M_V_final,'-o',LineWidth=2);
-% xlabel('Vertical Gain');
-% ylabel('Vertical Moment [kNm]');
+%% Plot vertical gains
+figure
+hold on; grid on; box on
+plot(verticalGains, M_V_final,'-o',LineWidth=2);
+xlabel('Vertical Gain');
+ylabel('Vertical Moment [kNm]');
 % ResizeAndSaveFigure(16,9,'HVFF_Vgain_Results.fig')
 
-% figure
-% hold on; grid on; box on
-% % plot(horizontalGains, M_H_final,'-o',LineWidth=2);
-% xlabel('Horizontal Gain');
-% ylabel('Horizontal Moment [kNm]');
-% % ResizeAndSaveFigure(16,9,'HVFF_Hgain_Results.fig')
 
 %% azimuth and pitch angles
 
-figure
-subplot(2,1,1)
-hold on; grid on; box on
-plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
-% plot(FBFFIPC.Time,     FBFFIPC.BldPitch2);
-% plot(FBFFIPC.Time,     FBFFIPC.BldPitch3);
-subplot(2,1,2)
-plot(SimOutFBFF.logsout.get('Azimuth').Values);
+% figure
+% subplot(2,1,1)
+% hold on; grid on; box on
+% plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
+% % plot(FBFFIPC.Time,     FBFFIPC.BldPitch2);
+% % plot(FBFFIPC.Time,     FBFFIPC.BldPitch3);
+% subplot(2,1,2)
+% plot(SimOutFBFF.logsout.get('Azimuth').Values);
+
+%% plot shear
+
+% figure;
+% hold on; grid on; box on
+% plot(SimOutFBFF.logsout.get('deltaV').Values);
+% plot(SimOutFBFF.logsout.get('deltaH').Values);
+% xlabel('time [s]')
+% ylabel('Shear [(m/s)/m]')
+% legend('Vertical Shear','Horizontal Shear','Location','northwest');
 
 %%
 % revert the inflow change
