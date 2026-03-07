@@ -27,7 +27,7 @@ TMax                = 600; % [s]
 
 % IPC parameters
 IPC = [];
-verticalGains = 1.61 : 0.01 : 1.66; %static gain for Vertical component
+verticalGains = -0.5 : 0.25 : 0.5; %static gain for Vertical component
 
 switch LidarType
     case '4BeamPulsed'
@@ -72,7 +72,7 @@ simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 verticalShear       = 0.02; % [(m/s)/m], 
 
 % phase offset
-deltat = .9; %s
+deltat = 1.1; %s
 LDP.deltaphi = R.PC_RefSpd*deltat;
 
 % add FF Parameter from FFP_v1.IN
@@ -138,16 +138,17 @@ ylabel('Vertical Moment [kNm]');
 % ResizeAndSaveFigure(16,9,'HVFF_Vgain_Results.fig')
 
 
-%% azimuth and pitch angles
+%% azimuth and moment
 
-% figure
-% subplot(2,1,1)
-% hold on; grid on; box on
-% plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
-% % plot(FBFFIPC.Time,     FBFFIPC.BldPitch2);
-% % plot(FBFFIPC.Time,     FBFFIPC.BldPitch3);
-% subplot(2,1,2)
-% plot(SimOutFBFF.logsout.get('Azimuth').Values);
+figure
+subplot(2,1,1)
+hold on; grid on; box on
+plot(SimOutFBFF.logsout.get('Azimuth_b').Values);
+subplot(2,1,2)
+hold on; grid on; box on
+plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
+ylabel({'BldPitch1'; '[deg]'});
+
 
 %% plot shear
 

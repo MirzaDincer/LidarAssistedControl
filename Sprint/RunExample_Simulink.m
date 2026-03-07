@@ -15,15 +15,15 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
+LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
 
 % IPC parameters
 IPC = [];
-IPC.FF.gV = 0.11; %static gain for Vertical component
-IPC.FF.gH = 0.11; %static gain for Horizontal component
+IPC.FF.gV = -0.2; %static gain for Vertical component
+IPC.FF.gH = 0; %static gain for Horizontal component
 
 switch LidarType
     case '4BeamPulsed'
@@ -51,8 +51,8 @@ switch LidarType
         LDP.Ycoord              = Y;
         LDP.Zcoord              = Z;
         % Individual pitch controller
-        IPC.FB.Kp = 5.3e-7;
-        IPC.FB.Ti = 4;
+        IPC.FB.Kp               = 10.6e-7;
+        IPC.FB.Ti               = 8;
 end
 
 
@@ -66,6 +66,10 @@ fast.FAST_directory = cd;
 P                   = ReadWrite_FAST(fast);
 simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
+
+% phase offset
+deltat = 1.1; %s
+LDP.deltaphi = R.PC_RefSpd*deltat;
 
 verticalShear       = 0.0167; % [(m/s)/m]
 
@@ -164,17 +168,34 @@ xlim([20 50])
 % ylabel({'RootMyb'; '[deg]'});
 % legend('feedback only','feedback-feedforward','Location','best')
 
+%% plot shears
+figure;
+subplot(2,1,1);
+hold on; grid on; box on
+plot(FB.Time,       FB.Wind1VelX);
+plot(SimOutFBFF.logsout.get('REWS_b').Values);
+ylabel('[m/s]');
+legend('Wind1VelX','REWS_b','Interpreter','none','Location','northwest')
 
-% display results
+subplot(2,1,2);
+hold on; grid on; box on
+plot(SimOutFBFF.logsout.get('deltaV').Values);
+plot(SimOutFBFF.logsout.get('deltaV_b').Values);
+xlabel('time [s]')
+ylabel('Shear [(m/s)/m]')
+legend('Vertical Shear','Vertical Shear Buffered','Location','northwest');
+% ResizeAndSaveFigure(16,9,'shearResults.fig')
+
+%% display results
 RotSpeed_0  = 7.56;     % [rpm]
 TwrBsMyt_0  = 158.3e3;  % [kNm]
 t_Start     = 0;        % [s]
 
-Cost_FB = (max(abs(FB.RotSpeed(FB.Time>=t_Start)-RotSpeed_0))) / RotSpeed_0 ...
-     + (max(abs(FB.TwrBsMyt(FB.Time>=t_Start)-TwrBsMyt_0))) / TwrBsMyt_0;
+% Cost_FB = (max(abs(FB.RotSpeed(FB.Time>=t_Start)-RotSpeed_0))) / RotSpeed_0 ...
+%      + (max(abs(FB.TwrBsMyt(FB.Time>=t_Start)-TwrBsMyt_0))) / TwrBsMyt_0;
 
 Cost = (max(abs(FBFFIPC.RotSpeed(FBFFIPC.Time>=t_Start)-RotSpeed_0))) / RotSpeed_0 ...
      + (max(abs(FBFFIPC.TwrBsMyt(FBFFIPC.Time>=t_Start)-TwrBsMyt_0))) / TwrBsMyt_0;
 
-fprintf('Cost for Summer Games 2024 (feedback only) ("30 s sprint"):  %f \n',Cost_FB);
+% fprintf('Cost for Summer Games 2024 (feedback only) ("30 s sprint"):  %f \n',Cost_FB);
 fprintf('Cost for Summer Games 2024 ("FF_IPC"):  %f \n',Cost);
