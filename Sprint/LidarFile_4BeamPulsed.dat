@@ -5,7 +5,7 @@ False	Echo           					- Echo input data to <RootName>.ech (flag)
 100		MAXDLLChainOutputs				- Number of entries in the avrSWAP array reserved for outputs of the LDP DLL
 ---------------------- LIDAR CONFIGURATION -------------------------------------
 1		TrajectoryType					- Switch : {0 = Cartesian coordinates; 1 = spherical coordinates} [-]
-0       WeightingType					- Switch : {0 = single point; 1 = Gaussian distribution; 2 = manual distribution} [-]
+2       WeightingType					- Switch : {0 = single point; 1 = Gaussian distribution; 2 = manual distribution} [-]
 1		LidarPositionX_N				- Position of the lidar coordinate system in the Nacelle coordinate system (X coordinate) [m]
 0		LidarPositionY_N				- Position of the lidar coordinate system in the Nacelle coordinate system (Y coordinate) [m]
 3		LidarPositionZ_N				- Position of the lidar coordinate system in the Nacelle coordinate system (Z coordinate) [m]
@@ -54,7 +54,7 @@ False		BladeBlockageFlag        	- Consider blade blockage (flag)
 ---------------------- Spinner Mounted--------------------
 False		SpinnerMountedFlag        	- Flag whether spinner-mounted considered 
 ---------------------- Nearest Interpolation ------------------------------------
-False        NearestInterpFlag           - Flag to use nearest interpolation. By default, linear interpolation is used 
+True        NearestInterpFlag           - Flag to use nearest interpolation. By default, linear interpolation is used 
 ---------------------- Output---------------------------------------------------
 OutList      							- The next line(s) contains a list of output parameters.  See OutListParameters.xlsx for a listing of available output channels, (-)
 VLOS01LI;VLOS02LI;VLOS03LI;VLOS04LI;VLOS05LI;VLOS06LI;VLOS07LI;VLOS08LI;VLOS09LI;VLOS10LI

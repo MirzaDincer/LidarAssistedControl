@@ -179,7 +179,10 @@ ManipulateTXTFile(inflowFile,'"Wind/SteadyWind"','"Wind/ECD_VrPlus2mps"');
 ManipulateTXTFile(elastoFile,'False                   TwFADOF1','True                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'False                   TwSSDOF1','True                   TwSSDOF1');
 
-% % display results
+ManipulateTXTFile(LidarFile,'0       WeightingType','2       WeightingType'); % disable lidar volume for a point measurement
+ManipulateTXTFile(LidarFile,'False        NearestInterpFlag','True        NearestInterpFlag'); % change the grid interpolation to linear
+
+%% % display results
 % RotSpeed_0  = 7.56;     % [rpm]
 % TwrBsMyt_0  = 158.3e3;  % [kNm]
 % t_Start     = 0;        % [s]
