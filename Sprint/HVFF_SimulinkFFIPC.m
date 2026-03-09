@@ -20,14 +20,14 @@ ManipulateTXTFile(elastoFile,'True                   TwFADOF1','False           
 ManipulateTXTFile(elastoFile,'True                   TwSSDOF1','False                   TwSSDOF1');
 
 % select simulated lidar
-LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
+LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 600; % [s]
 
 % IPC parameters
 IPC = [];
-verticalGains = -0.5 : 0.25 : 0.5; %static gain for Vertical component
+verticalGains = -0.5 : 0.05 : 0.0; %static gain for Vertical component
 
 switch LidarType
     case '4BeamPulsed'
@@ -38,6 +38,9 @@ switch LidarType
         LDP.FlagLPF             = 1;            % [0/1]     Enable low-pass filter (flag)
         LDP.omega_cutoff        = 0.1232;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
         LDP.T_buffer            = 5.5;          % [s]       Buffer time for filtered REWS signal
+        [Y, Z]                  = calculateposlidbeams('LidarFile_4BeamPulsed.dat' , LDP.IndexGate, LDP.NumberOfBeams);
+        LDP.Ycoord              = Y;
+        LDP.Zcoord              = Z;
         IPC.FB.Kp = 5.3e-7;
         IPC.FB.Ti = 4;
     case 'CircularCW'

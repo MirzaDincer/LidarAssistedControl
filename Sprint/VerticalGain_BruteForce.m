@@ -5,6 +5,9 @@
 % LAC can reduce the ultimate tower loads. 
 % Here, only the rotor motion and tower motion (GenDOF, TwFADOF1, TwSSDOF1) 
 % are enabled for simplicity.
+
+% Script for finding the vertical gain for IPC that gives best cost
+
 % Result (slightly different to pure matlab version RunExample.m):       
 % Cost for Summer Games 2025 ("30 s sprint"):  0.722838 (4BeamPulsed)
 % Cost for Summer Games 2025 ("30 s sprint"):  1.217274 (CircularCW)
@@ -15,15 +18,14 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
 
 % IPC parameters
 IPC = [];
-%static gain for Vertical component
-% IPC.FF.gV = -0.375; % CircularCW = -0.45, 4BeamPulsed = -0.375
+verticalGains = -0.7 : 0.025 : -0.2; %static gain for Vertical component
 IPC.FF.gH = 0; %static gain for Horizontal component
 
 switch LidarType
@@ -40,7 +42,6 @@ switch LidarType
         LDP.Zcoord              = Z;
         IPC.FB.Kp               = 5.3e-7;
         IPC.FB.Ti               = 4;
-        IPC.FF.gV               = -0.375;
     case 'CircularCW'
         % configuration from LDP_v1_CircularCW.IN and FFP_v1_CircularCW.IN
         LDP.NumberOfBeams       = 50;           % [-]       Number of beams measuring at different directions               
@@ -55,7 +56,6 @@ switch LidarType
         % Individual pitch controller
         IPC.FB.Kp               = 10.6e-7;
         IPC.FB.Ti               = 8;
-        IPC.FF.gV               = -0.45;
 end
 
 
@@ -80,47 +80,29 @@ verticalShear       = 0.0167; % [(m/s)/m]
 R.StaticWind        = [0   10.0000   11.0000   12.0000   13.0000   14.0000   15.0000   16.0000   17.0000   18.0000   19.0000   20.0000   21.0000   22.0000   23.0000   24.0000   25.0000   26.0000   27.0000   28.0000   29.0000   30.0000]; % Wind speed  values in static pitch curve [m/s]
 R.StaticPitch       = [0         0    0.0552    0.1085    0.1451    0.1749    0.2011    0.2250    0.2473    0.2682    0.2882    0.3072    0.3255    0.3432    0.3603    0.3769    0.3930    0.4087    0.4240    0.4389    0.4535    0.4679]; % Pitch angle values in static pitch curve [rad]
 
-%% Run FB
-clear FAST_SFunc 
-clear OpenFAST_ROSCO_LDP_FFP
-R.FlagLAC           = 0; % Disable LAC
-SimOutFB            = sim('OpenFAST_ROSCO_LDP_FFP.slx',[0,TMax]);
-movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FB.outb'])      % store results
-
-%% Run FB with IPC
-% clear FAST_SFunc 
-% clear OpenFAST_ROSCO_LDP_FFP_with_IPC
-% R.FlagLAC           = 0; % Disable LAC
-% SimOutFB            = sim('OpenFAST_ROSCO_LDP_FFP_with_IPC.slx',[0,TMax]);
-% movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBIPC.outb'])      % store results
-
-%% Run FBFF
-clear FAST_SFunc 
-clear OpenFAST_ROSCO_LDP_FFP
-R.FlagLAC           = 1; % Enable LAC
-SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP.slx',[0,TMax]);
-movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFF.outb'])    % store results
-
 %% Run FBFF with IPC
-clear FAST_SFunc 
-clear OpenFAST_ROSCO_LDP_FFP_with_IPC
-R.FlagLAC           = 1; % Enable LAC
-SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_FFIPC.slx',[0,TMax]);
-movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFFIPC.outb'])    % store results
+for i = 1:length(verticalGains)
+    IPC.FF.gV = verticalGains(i);
+    clear FAST_SFunc 
+    clear OpenFAST_ROSCO_LDP_FFP_with_IPC
+    R.FlagLAC           = 1; % Enable LAC
+    SimOutFBFF          = sim('OpenFAST_ROSCO_LDP_FFP_with_FFIPC.slx',[0,TMax]);
+    movefile([SimulationName,'.SFunc.outb'],[SimulationName,'_FBFFIPC.outb'])    % store results
+    FBFFIPC         = ReadFASTbinaryIntoStruct([SimulationName,'_FBFFIPC.outb']);
+    RotSpeed_0  = 7.56;     % [rpm]
+    TwrBsMyt_0  = 158.3e3;  % [kNm]
+    t_Start     = 0;        % [s]
 
+    CostResults(i) = (max(abs(FBFFIPC.RotSpeed(FBFFIPC.Time>=t_Start)-RotSpeed_0))) / RotSpeed_0 ...
+     + (max(abs(FBFFIPC.TwrBsMyt(FBFFIPC.Time>=t_Start)-TwrBsMyt_0))) / TwrBsMyt_0;
+end
 %% Comparison
-% read in data
-FB              = ReadFASTbinaryIntoStruct([SimulationName,'_FB.outb']);
-FBFF            = ReadFASTbinaryIntoStruct([SimulationName,'_FBFF.outb']);
-% FBIPC           = ReadFASTbinaryIntoStruct([SimulationName,'_FBIPC.outb']);
-FBFFIPC         = ReadFASTbinaryIntoStruct([SimulationName,'_FBFFIPC.outb']);
 
 % Plot 
 figure('Name','Simulation results')
 
 subplot(5,1,1);
 hold on; grid on; box on
-plot(FB.Time,       FB.Wind1VelX);
 plot(SimOutFBFF.logsout.get('REWS_b').Values);
 ylabel('[m/s]');
 legend('Wind1VelX','REWS_b','Interpreter','none','Location','best')
@@ -135,59 +117,36 @@ legend('Vertical Shear','Vertical Shear Buffered','Location','southwest');
 
 subplot(5,1,3);
 hold on; grid on; box on
-plot(FB.Time,       FB.BldPitch1);
-plot(FBFF.Time,     FBFF.BldPitch1);
-% plot(FBIPC.Time,     FBIPC.BldPitch1);
 plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
 ylabel({'BldPitch1'; '[deg]'});
 % legend('feedback only','feedback-feedforward','feedback only with IPC','feedback-feedforward with IPC' ,'Location','best')
 
 subplot(5,1,4);
 hold on; grid on; box on
-plot(FB.Time,       FB.RotSpeed);
-plot(FBFF.Time,     FBFF.RotSpeed);
-% plot(FBIPC.Time,     FBIPC.RotSpeed);
 plot(FBFFIPC.Time,     FBFFIPC.RotSpeed);
 ylabel({'RotSpeed';'[rpm]'});
 legend('feedback only','feedback-feedforward','feedback-feedforward with IPC' ,'Location','northwest')
 
 subplot(5,1,5);
 hold on; grid on; box on
-plot(FB.Time,       FB.TwrBsMyt/1e3);
-plot(FBFF.Time,     FBFF.TwrBsMyt/1e3);
-% plot(FBIPC.Time,     FBIPC.TwrBsMyt/1e3);
 plot(FBFFIPC.Time,     FBFFIPC.TwrBsMyt/1e3);
 ylabel({'TwrBsMyt';'[MNm]'});
 
 xlabel('time [s]')
 linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
 xlim([20 50])
-ResizeAndSaveFigure(32,18,'CircularCW_Result.fig')
+% ResizeAndSaveFigure(32,18,'CircularCW_Result.fig')
 % ResizeAndSaveFigure(32,18,'4BeamPulsed_Result.fig')
 
-
-%% plot shears
+%% plot brute force gain
 figure;
-subplot(2,1,1);
 hold on; grid on; box on
-plot(FB.Time,       FB.Wind1VelX);
-plot(SimOutFBFF.logsout.get('REWS_b').Values);
-ylabel('[m/s]');
-legend('Wind1VelX','REWS_b','Interpreter','none','Location','northwest')
-
-subplot(2,1,2);
-hold on; grid on; box on
-plot(SimOutFBFF.logsout.get('deltaV').Values);
-plot(SimOutFBFF.logsout.get('deltaV_b').Values);
-xlabel('time [s]')
-ylabel('Shear [(m/s)/m]')
-legend('Vertical Shear','Vertical Shear Buffered','Location','southwest');
-ResizeAndSaveFigure(16,9,'shearResults.fig')
+plot(verticalGains, CostResults, '-o')
+xlabel('Vertical Gains')
+ylabel('Cost');
 
 %% display results
-RotSpeed_0  = 7.56;     % [rpm]
-TwrBsMyt_0  = 158.3e3;  % [kNm]
-t_Start     = 0;        % [s]
+
 
 % Cost_FB = (max(abs(FB.RotSpeed(FB.Time>=t_Start)-RotSpeed_0))) / RotSpeed_0 ...
 %      + (max(abs(FB.TwrBsMyt(FB.Time>=t_Start)-TwrBsMyt_0))) / TwrBsMyt_0;
