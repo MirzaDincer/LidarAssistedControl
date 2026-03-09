@@ -20,15 +20,15 @@ ManipulateTXTFile(elastoFile,'True                   TwFADOF1','False           
 ManipulateTXTFile(elastoFile,'True                   TwSSDOF1','False                   TwSSDOF1');
 
 % select simulated lidar
-LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % simulation time
-TMax                = 600; % [s]
+TMax                = 100; % [s]
 
 % IPC parameters
 IPC = [];
-% verticalGains = -0.5 : 0.05 : 0.0; %static gain for Vertical component
-verticalGains = 0.05;
+verticalGains = -6 : 2 : 0; %static gain for Vertical component
+% verticalGains = 6.5;
 
 switch LidarType
     case '4BeamPulsed'
@@ -65,7 +65,7 @@ switch LidarType
 end
 
 % change Lidar file
-ManipulateTXTFile(LidarFile,'2       WeightingType','0       WeightingType'); % disable lidar volume for a point measurement
+% ManipulateTXTFile(LidarFile,'2       WeightingType','0       WeightingType'); % disable lidar volume for a point measurement
 ManipulateTXTFile(LidarFile,'True        NearestInterpFlag','False        NearestInterpFlag'); % change the grid interpolation to linear
 
 
@@ -80,10 +80,17 @@ P                   = ReadWrite_FAST(fast);
 simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
 
-verticalShear       = 0.02; % [(m/s)/m], 
+%% pitch actuator speed up
+F.F_PitchAct.b(1) = 0.0078;
+F.F_PitchAct.b(2) = 0.0156;
+F.F_PitchAct.b(3) = 0.0078;
+
+F.F_PitchAct.a(1) = 1;
+F.F_PitchAct.a(2) = -1.7347;
+F.F_PitchAct.a(3) = 0.766;
 
 % phase offset
-deltat = 1.1; %s
+deltat = 1.6; %s
 LDP.deltaphi = R.PC_RefSpd*deltat;
 
 % add FF Parameter from FFP_v1.IN
@@ -111,7 +118,9 @@ for i =1:length(verticalGains)
     idx       = find( FBFFIPC.Time == T_s ); % Starting index
     M_V_final(i) = mean(M_V(idx:end));
 
-%%
+    moop_final(i) = mean(FBFFIPC.RootMyb1(idx:end));
+
+%% plot results
     figure(i)
     subplot(4,1,1);
     hold on; grid on; box on
@@ -149,27 +158,37 @@ ylabel('Vertical Moment [kNm]');
 % ResizeAndSaveFigure(16,9,'HVFF_Vgain_Results.fig')
 
 
-%% azimuth and moment
+%% azimuth and pitch
 
 figure
 subplot(2,1,1)
 hold on; grid on; box on
-plot(SimOutFBFF.logsout.get('Azimuth_b').Values);
+plot(SimOutFBFF.logsout.get('Azimuth').Values);
 subplot(2,1,2)
 hold on; grid on; box on
 plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
 ylabel({'BldPitch1'; '[deg]'});
 
+%% moments
+figure
+hold on; grid on; box on
+plot(FBFFIPC.Time, FBFFIPC.RootMyb1);
 
 %% plot shear
 
+figure;
+hold on; grid on; box on
+plot(SimOutFBFF.logsout.get('deltaV').Values);
+xlabel('time [s]')
+ylabel('Shear [(m/s)/m]')
+legend('Vertical Shear','Location','northwest');
+
 % figure;
 % hold on; grid on; box on
-% plot(SimOutFBFF.logsout.get('deltaV').Values);
-% plot(SimOutFBFF.logsout.get('deltaH').Values);
+% plot(SimOutFBFF.logsout.get('v_los').Values);
 % xlabel('time [s]')
 % ylabel('Shear [(m/s)/m]')
-% legend('Vertical Shear','Horizontal Shear','Location','northwest');
+% legend('v_los','Location','northwest');
 
 %%
 % revert the inflow change
@@ -179,7 +198,7 @@ ManipulateTXTFile(inflowFile,'"Wind/SteadyWind"','"Wind/ECD_VrPlus2mps"');
 ManipulateTXTFile(elastoFile,'False                   TwFADOF1','True                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'False                   TwSSDOF1','True                   TwSSDOF1');
 
-ManipulateTXTFile(LidarFile,'0       WeightingType','2       WeightingType'); % disable lidar volume for a point measurement
+% ManipulateTXTFile(LidarFile,'0       WeightingType','2       WeightingType'); % disable lidar volume for a point measurement
 ManipulateTXTFile(LidarFile,'False        NearestInterpFlag','True        NearestInterpFlag'); % change the grid interpolation to linear
 
 %% % display results
