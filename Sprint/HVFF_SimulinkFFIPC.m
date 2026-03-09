@@ -27,7 +27,8 @@ TMax                = 600; % [s]
 
 % IPC parameters
 IPC = [];
-verticalGains = -0.5 : 0.05 : 0.0; %static gain for Vertical component
+% verticalGains = -0.5 : 0.05 : 0.0; %static gain for Vertical component
+verticalGains = 0.05;
 
 switch LidarType
     case '4BeamPulsed'
@@ -41,8 +42,9 @@ switch LidarType
         [Y, Z]                  = calculateposlidbeams('LidarFile_4BeamPulsed.dat' , LDP.IndexGate, LDP.NumberOfBeams);
         LDP.Ycoord              = Y;
         LDP.Zcoord              = Z;
-        IPC.FB.Kp = 5.3e-7;
-        IPC.FB.Ti = 4;
+        IPC.FB.Kp               = 5.3e-7;
+        IPC.FB.Ti               = 4;
+        LidarFile               = 'LidarFile_4BeamPulsed.dat';
     case 'CircularCW'
         % configuration from LDP_v1_CircularCW.IN and FFP_v1_CircularCW.IN
         LDP.NumberOfBeams       = 50;           % [-]       Number of beams measuring at different directions               
@@ -56,10 +58,16 @@ switch LidarType
         % Individual pitch controller
         IPC.FB.Kp = 5.3e-7;
         IPC.FB.Ti = 4;
+        LidarFile               = 'LidarFile_CircularCW.dat';
         [Y, Z]                  = calculateposlidbeams('LidarFile_CircularCW.dat' , LDP.IndexGate, LDP.NumberOfBeams);
         LDP.Ycoord              = Y;
         LDP.Zcoord              = Z;
 end
+
+% change Lidar file
+ManipulateTXTFile(LidarFile,'2       WeightingType','0       WeightingType'); % disable lidar volume for a point measurement
+ManipulateTXTFile(LidarFile,'True        NearestInterpFlag','False        NearestInterpFlag'); % change the grid interpolation to linear
+
 
 % define FAST input file
 SimulationName      = ['IEA-15-240-RWT-Monopile_Simulink_',LidarType];

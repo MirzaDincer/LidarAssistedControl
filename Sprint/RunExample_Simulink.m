@@ -15,7 +15,7 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
