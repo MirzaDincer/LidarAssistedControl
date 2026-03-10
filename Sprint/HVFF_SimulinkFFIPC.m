@@ -18,17 +18,18 @@ ManipulateTXTFile(inflowFile,'"Wind/ECD_VrPlus2mps"','"Wind/SteadyWind"');
 elastoFile = 'IEA-15-240-RWT-Monopile_ElastoDyn.dat';
 ManipulateTXTFile(elastoFile,'True                   TwFADOF1','False                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'True                   TwSSDOF1','False                   TwSSDOF1');
+ManipulateTXTFile(elastoFile,'-6.0                   ShftTilt','0.0                   ShftTilt');
 
 % select simulated lidar
-LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
+LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
 
 % simulation time
-TMax                = 100; % [s]
+TMax                = 600; % [s]
 
 % IPC parameters
 IPC = [];
-verticalGains = -6 : 2 : 0; %static gain for Vertical component
-% verticalGains = 6.5;
+% verticalGains = 1: -.025 : .9; %static gain for Vertical component
+verticalGains = .92;
 
 switch LidarType
     case '4BeamPulsed'
@@ -52,11 +53,9 @@ switch LidarType
         LDP.IndexGate           = 1;            % [-]       IndexGate
         LDP.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
         LDP.omega_cutoff        = 0.3268;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
-        % LDP.omega_cutoff        = 0.5;       % [rad/s]   Corner frequency (-3dB) of the low-pass filter
         LDP.T_buffer            = 7.5;          % [s]       Buffer time for filtered REWS signal        
-        % LDP.T_buffer            = 7;          % [s]       Buffer time for filtered REWS signal     
         % Individual pitch controller
-        IPC.FB.Kp = 5.3e-7;
+        IPC.FB.Kp = 1e-7;
         IPC.FB.Ti = 4;
         LidarFile               = 'LidarFile_CircularCW.dat';
         [Y, Z]                  = calculateposlidbeams('LidarFile_CircularCW.dat' , LDP.IndexGate, LDP.NumberOfBeams);
@@ -86,11 +85,11 @@ F.F_PitchAct.b(2) = 0.0156;
 F.F_PitchAct.b(3) = 0.0078;
 
 F.F_PitchAct.a(1) = 1;
-F.F_PitchAct.a(2) = -1.7347;
+F.F_PitchAct.a(2) = -1.7347;  
 F.F_PitchAct.a(3) = 0.766;
 
 % phase offset
-deltat = 1.6; %s
+deltat = 0; %s
 LDP.deltaphi = R.PC_RefSpd*deltat;
 
 % add FF Parameter from FFP_v1.IN
@@ -118,10 +117,13 @@ for i =1:length(verticalGains)
     idx       = find( FBFFIPC.Time == T_s ); % Starting index
     M_V_final(i) = mean(M_V(idx:end));
 
-    moop_final(i) = mean(FBFFIPC.RootMyb1(idx:end));
+    moop_final = (FBFFIPC.RootMyb1(idx:end));
+    moop_final_amp(i) = max(moop_final)-min(moop_final);
 
 %% plot results
-    figure(i)
+
+% wind speed + blade pitch + rotational speed + tower base moment 
+    figure(1)
     subplot(4,1,1);
     hold on; grid on; box on
     plot(FBFFIPC.Time,       FBFFIPC.Wind1VelX);
@@ -142,20 +144,38 @@ for i =1:length(verticalGains)
     subplot(4,1,4);
     hold on; grid on; box on
     plot(FBFFIPC.Time,     FBFFIPC.TwrBsMyt/1e3);
+
     ylabel({'TwrBsMyt';'[MNm]'});
-    
     xlabel('time [s]')
     linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
     xlim([0 600])
+
+% out of plane moment
+    
+    figure(2)
+    hold on; grid on; box on
+    plot(FBFFIPC.Time, FBFFIPC.RootMyb1);
+
+    ylabel({'RootMy';'[MNm]'});
+    xlabel('time [s]')
+    linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
+
 end
 
-%% Plot vertical gains
+%% Plot vertical gains - vertical moments
 figure
 hold on; grid on; box on
 plot(verticalGains, M_V_final,'-o',LineWidth=2);
 xlabel('Vertical Gain');
 ylabel('Vertical Moment [kNm]');
 % ResizeAndSaveFigure(16,9,'HVFF_Vgain_Results.fig')
+
+%% Plot vertical gains - oop moment amplitude
+figure
+hold on; grid on; box on
+plot(verticalGains, moop_final_amp,'-o',LineWidth=2);
+xlabel('Vertical Gain');
+ylabel('Oop1 Moment amplitude [kNm]');
 
 
 %% azimuth and pitch
@@ -168,11 +188,6 @@ subplot(2,1,2)
 hold on; grid on; box on
 plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
 ylabel({'BldPitch1'; '[deg]'});
-
-%% moments
-figure
-hold on; grid on; box on
-plot(FBFFIPC.Time, FBFFIPC.RootMyb1);
 
 %% plot shear
 
@@ -197,6 +212,7 @@ ManipulateTXTFile(inflowFile,'"Wind/SteadyWind"','"Wind/ECD_VrPlus2mps"');
 % Turn back on DOFs
 ManipulateTXTFile(elastoFile,'False                   TwFADOF1','True                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'False                   TwSSDOF1','True                   TwSSDOF1');
+ManipulateTXTFile(elastoFile,'0.0                   ShftTilt','-6.0                   ShftTilt');
 
 % ManipulateTXTFile(LidarFile,'0       WeightingType','2       WeightingType'); % disable lidar volume for a point measurement
 ManipulateTXTFile(LidarFile,'False        NearestInterpFlag','True        NearestInterpFlag'); % change the grid interpolation to linear
