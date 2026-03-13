@@ -7,7 +7,7 @@
 %% Setup
 clear all; close all; clc;
 
-FileName = 'SteadyWind';
+FileName = 'SteadyWind_0p024';
 
 %% Preprocessing
 % Time discretization
@@ -40,7 +40,7 @@ alpha       = 0.2;                                  % [-]   shear exponent for N
 z_hub       = HubHeight;
 z           = [-(Nz-1)/2:1:(Nz-1)/2]*dz+HubHeight;  % [m]   vertical coordinates of the grid
 % V_z         = V_hub*(z/z_hub).^alpha;               % [m/s] mean wind profile at each vertical grid point
-m           = 0.02; % [(m/s)/m]
+m           = 0.024; % [(m/s)/m]
 V_z         = V_hub + m*(z - z_hub);   % [m/s] wind profile with linear shear
 
 % --- Steady wind magnitude with shear ---
@@ -95,12 +95,21 @@ for iy = 1:Ny
     end
 end
 
-% Get turbulence intensity for .sum-file
-% here we use std u for w component to avoid dividing by zero
-TI_scale = max(std(squeeze(velocity(:,1,ceil(Ny/2),ceil(Nz/2))))/URef*100, 1.0);
-SummVars(4) = TI_scale;
-SummVars(5) = TI_scale;
-SummVars(6) = TI_scale;
+% u: must encode full shear range
+max_deviation = max(abs(max(V_z) - URef), abs(min(V_z) - URef));
+TI_u = max((max_deviation / URef * 100) * 1.05, 1.0);
+% v: zero field, only needs minimum (no range to encode)
+TI_v = 1.0;
+% w: zero field, only needs minimum
+TI_w = 1.0;
+
+max_deviation = max(abs(max(V_z) - URef), abs(min(V_z) - URef));
+TI_scale = max((max_deviation / URef * 100) * 1.05, 1.0);
+
+% TI_scale = std(squeeze(velocity(:,1,1,1)))/URef*100;
+SummVars(4) = TI_u;
+SummVars(5) = TI_v;
+SummVars(6) = TI_w;
 
 % Export rotor-plane wind field (.wnd + .sum) for OpenFAST
 disp('Exporting rotor plane wind field as ".wnd" binary files...')

@@ -15,7 +15,7 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
+LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
@@ -23,7 +23,6 @@ TMax                = 50; % [s]
 % IPC parameters
 IPC = [];
 %static gain for Vertical component
-% IPC.FF.gV = -0.375; % CircularCW = -0.45, 4BeamPulsed = -0.375
 IPC.FF.gH = 0; %static gain for Horizontal component
 
 switch LidarType
@@ -40,7 +39,7 @@ switch LidarType
         LDP.Zcoord              = Z;
         IPC.FB.Kp               = 5.3e-7;
         IPC.FB.Ti               = 4;
-        IPC.FF.gV               = -0.375;
+        IPC.FF.gV               = 1.2;
     case 'CircularCW'
         % configuration from LDP_v1_CircularCW.IN and FFP_v1_CircularCW.IN
         LDP.NumberOfBeams       = 50;           % [-]       Number of beams measuring at different directions               
@@ -53,9 +52,9 @@ switch LidarType
         LDP.Ycoord              = Y;
         LDP.Zcoord              = Z;
         % Individual pitch controller
-        IPC.FB.Kp               = 10.6e-7;
-        IPC.FB.Ti               = 8;
-        IPC.FF.gV               = -0.45;
+        IPC.FB.Kp               = 5.3e-7;
+        IPC.FB.Ti               = 4;
+        IPC.FF.gV               = 1.2;
 end
 
 
@@ -71,10 +70,8 @@ simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
 
 % phase offset
-deltat = 1.1; %s
-LDP.deltaphi = R.PC_RefSpd*deltat;
-
-verticalShear       = 0.0167; % [(m/s)/m]
+deltat = 0.51;                          % s — use your measured value
+LDP.deltaphi = -R.PC_RefSpd * deltat;   % rad — at rated speed
 
 % add FF Parameter from FFP_v1.IN
 R.StaticWind        = [0   10.0000   11.0000   12.0000   13.0000   14.0000   15.0000   16.0000   17.0000   18.0000   19.0000   20.0000   21.0000   22.0000   23.0000   24.0000   25.0000   26.0000   27.0000   28.0000   29.0000   30.0000]; % Wind speed  values in static pitch curve [m/s]
@@ -118,22 +115,14 @@ FBFFIPC         = ReadFASTbinaryIntoStruct([SimulationName,'_FBFFIPC.outb']);
 % Plot 
 figure('Name','Simulation results')
 
-subplot(5,1,1);
+subplot(4,1,1);
 hold on; grid on; box on
 plot(FB.Time,       FB.Wind1VelX);
 plot(SimOutFBFF.logsout.get('REWS_b').Values);
 ylabel('[m/s]');
 legend('Wind1VelX','REWS_b','Interpreter','none','Location','best')
 
-subplot(5,1,2);
-hold on; grid on; box on
-plot(SimOutFBFF.logsout.get('deltaV').Values);
-plot(SimOutFBFF.logsout.get('deltaV_b').Values);
-xlabel('time [s]')
-ylabel('Shear [(m/s)/m]')
-legend('Vertical Shear','Vertical Shear Buffered','Location','southwest');
-
-subplot(5,1,3);
+subplot(4,1,2);
 hold on; grid on; box on
 plot(FB.Time,       FB.BldPitch1);
 plot(FBFF.Time,     FBFF.BldPitch1);
@@ -142,7 +131,7 @@ plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
 ylabel({'BldPitch1'; '[deg]'});
 % legend('feedback only','feedback-feedforward','feedback only with IPC','feedback-feedforward with IPC' ,'Location','best')
 
-subplot(5,1,4);
+subplot(4,1,3);
 hold on; grid on; box on
 plot(FB.Time,       FB.RotSpeed);
 plot(FBFF.Time,     FBFF.RotSpeed);
@@ -151,7 +140,7 @@ plot(FBFFIPC.Time,     FBFFIPC.RotSpeed);
 ylabel({'RotSpeed';'[rpm]'});
 legend('feedback only','feedback-feedforward','feedback-feedforward with IPC' ,'Location','northwest')
 
-subplot(5,1,5);
+subplot(4,1,4);
 hold on; grid on; box on
 plot(FB.Time,       FB.TwrBsMyt/1e3);
 plot(FBFF.Time,     FBFF.TwrBsMyt/1e3);
@@ -162,7 +151,7 @@ ylabel({'TwrBsMyt';'[MNm]'});
 xlabel('time [s]')
 linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
 xlim([20 50])
-ResizeAndSaveFigure(32,18,'CircularCW_Result.fig')
+% ResizeAndSaveFigure(32,18,'CircularCW_Result.fig')
 % ResizeAndSaveFigure(32,18,'4BeamPulsed_Result.fig')
 
 
@@ -182,7 +171,7 @@ plot(SimOutFBFF.logsout.get('deltaV_b').Values);
 xlabel('time [s]')
 ylabel('Shear [(m/s)/m]')
 legend('Vertical Shear','Vertical Shear Buffered','Location','southwest');
-ResizeAndSaveFigure(16,9,'shearResults.fig')
+% ResizeAndSaveFigure(16,9,'shearResults.fig')
 
 %% display results
 RotSpeed_0  = 7.56;     % [rpm]
