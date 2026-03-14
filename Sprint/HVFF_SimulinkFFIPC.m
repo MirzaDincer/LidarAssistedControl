@@ -22,7 +22,7 @@ ManipulateTXTFile(inflowFile,'"Wind/ECD_VrPlus2mps"',wind_cases(1));
 elastoFile = 'IEA-15-240-RWT-Monopile_ElastoDyn.dat';
 ManipulateTXTFile(elastoFile,'True                   TwFADOF1','False                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'True                   TwSSDOF1','False                   TwSSDOF1');
-% ManipulateTXTFile(elastoFile,'-6.0                   ShftTilt','0.0                   ShftTilt');
+ManipulateTXTFile(elastoFile,'-6.0                   ShftTilt','0.0                   ShftTilt');
 
 % select simulated lidar
 LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
@@ -32,8 +32,8 @@ TMax                = 600; % [s]
 
 % IPC parameters
 IPC = [];
-verticalGains = 0.5 : 0.5 : 1.5; %static gain for Vertical component
-% verticalGains = 0.0;
+% verticalGains = 1 : 0.1 : 1.5; %static gain for Vertical component
+verticalGains = 1.4;
 gain_tags    = "g" + strrep(string(verticalGains), '.', 'p');  % "g0p0", "g0p5", "g1p0", etc.
 
 
@@ -86,17 +86,8 @@ P                   = ReadWrite_FAST(fast);
 simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
 
-%% pitch actuator speed up
-% F.F_PitchAct.b(1) = 0.0078;
-% F.F_PitchAct.b(2) = 0.0156;
-% F.F_PitchAct.b(3) = 0.0078;
-% 
-% F.F_PitchAct.a(1) = 1;
-% F.F_PitchAct.a(2) = -1.7347;  
-% F.F_PitchAct.a(3) = 0.766;
-
 % phase offset
-deltat = 0.0;                          % s — use your measured value
+deltat = 0.425;                          % s — use your measured value
 LDP.deltaphi = -R.PC_RefSpd * deltat;   % rad — at rated speed
 
 % add FF Parameter from FFP_v1.IN
@@ -270,7 +261,7 @@ legend('Vertical Shear','Location','northwest');
 % Turn back on DOFs
 ManipulateTXTFile(elastoFile,'False                   TwFADOF1','True                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'False                   TwSSDOF1','True                   TwSSDOF1');
-% ManipulateTXTFile(elastoFile,'0.0                   ShftTilt','-6.0                   ShftTilt');
+ManipulateTXTFile(elastoFile,'0.0                   ShftTilt','-6.0                   ShftTilt');
 
 % ManipulateTXTFile(LidarFile,'0       WeightingType','2       WeightingType'); % disable lidar volume for a point measurement
 ManipulateTXTFile(LidarFile,'False        NearestInterpFlag','True        NearestInterpFlag'); % change the grid interpolation to linear

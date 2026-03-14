@@ -15,7 +15,7 @@ addpath(genpath('..\WetiMatlabFunctions'))
 addpath(genpath('..\NrelMatlabFunctions'))
 
 % select simulated lidar
-LidarType       = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % simulation time
 TMax                = 50; % [s]
@@ -39,7 +39,9 @@ switch LidarType
         LDP.Zcoord              = Z;
         IPC.FB.Kp               = 5.3e-7;
         IPC.FB.Ti               = 4;
-        IPC.FF.gV               = 1.2;
+        IPC.FF.gV               = 1.4;
+        IPC.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
+        IPC.omega_cutoff        = 0.1;          % [rad/s]   Corner frequency (-3dB) of the low-pass filter
     case 'CircularCW'
         % configuration from LDP_v1_CircularCW.IN and FFP_v1_CircularCW.IN
         LDP.NumberOfBeams       = 50;           % [-]       Number of beams measuring at different directions               
@@ -54,7 +56,9 @@ switch LidarType
         % Individual pitch controller
         IPC.FB.Kp               = 5.3e-7;
         IPC.FB.Ti               = 4;
-        IPC.FF.gV               = 1.2;
+        IPC.FF.gV               = 1.4;
+        IPC.FlagLPF             = 0;
+        IPC.omega_cutoff        = 0.25;
 end
 
 
@@ -70,7 +74,7 @@ simu.dt             = P.FP.Val{contains(P.FP.Label,'DT')};
 [R,F]               = load_ROSCO_params(P,simu);
 
 % phase offset
-deltat = 0.51;                          % s — use your measured value
+deltat = 0.425;                          % s — use your measured value
 LDP.deltaphi = -R.PC_RefSpd * deltat;   % rad — at rated speed
 
 % add FF Parameter from FFP_v1.IN
@@ -129,7 +133,7 @@ plot(FBFF.Time,     FBFF.BldPitch1);
 % plot(FBIPC.Time,     FBIPC.BldPitch1);
 plot(FBFFIPC.Time,     FBFFIPC.BldPitch1);
 ylabel({'BldPitch1'; '[deg]'});
-% legend('feedback only','feedback-feedforward','feedback only with IPC','feedback-feedforward with IPC' ,'Location','best')
+legend('feedback only','feedback-feedforward','feedback-feedforward with IPC' ,'Location','best')
 
 subplot(4,1,3);
 hold on; grid on; box on
@@ -138,7 +142,7 @@ plot(FBFF.Time,     FBFF.RotSpeed);
 % plot(FBIPC.Time,     FBIPC.RotSpeed);
 plot(FBFFIPC.Time,     FBFFIPC.RotSpeed);
 ylabel({'RotSpeed';'[rpm]'});
-legend('feedback only','feedback-feedforward','feedback-feedforward with IPC' ,'Location','northwest')
+% legend('feedback only','feedback-feedforward','feedback-feedforward with IPC' ,'Location','northwest')
 
 subplot(4,1,4);
 hold on; grid on; box on
@@ -162,6 +166,7 @@ hold on; grid on; box on
 plot(FB.Time,       FB.Wind1VelX);
 plot(SimOutFBFF.logsout.get('REWS_b').Values);
 ylabel('[m/s]');
+xlim([20 50])
 legend('Wind1VelX','REWS_b','Interpreter','none','Location','northwest')
 
 subplot(2,1,2);
@@ -170,8 +175,26 @@ plot(SimOutFBFF.logsout.get('deltaV').Values);
 plot(SimOutFBFF.logsout.get('deltaV_b').Values);
 xlabel('time [s]')
 ylabel('Shear [(m/s)/m]')
+xlim([20 50])
 legend('Vertical Shear','Vertical Shear Buffered','Location','southwest');
 % ResizeAndSaveFigure(16,9,'shearResults.fig')
+
+%% Plot M_V
+figure;
+subplot(2,1,1);
+hold on; grid on; box on
+plot(FB.Time,       FB.Wind1VelX);
+plot(SimOutFBFF.logsout.get('REWS_b').Values);
+ylabel('[m/s]');
+xlim([20 50])
+legend('Wind1VelX','REWS_b','Interpreter','none','Location','northwest')
+
+subplot(2,1,2)
+hold on; grid on; box on
+plot(SimOutFBFF.logsout.get('M_V').Values)
+xlabel('time [s]')
+ylabel('Vertical Moment [kNm]')
+xlim([20 50])
 
 %% display results
 RotSpeed_0  = 7.56;     % [rpm]
