@@ -22,7 +22,10 @@ ManipulateTXTFile(inflowFile,'"Wind/ECD_VrPlus2mps"',wind_cases(1));
 elastoFile = 'IEA-15-240-RWT-Monopile_ElastoDyn.dat';
 ManipulateTXTFile(elastoFile,'True                   TwFADOF1','False                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'True                   TwSSDOF1','False                   TwSSDOF1');
+
 ManipulateTXTFile(elastoFile,'-6.0                   ShftTilt','0.0                   ShftTilt');
+
+% Changing cone angles manually to zero. 
 
 % select simulated lidar
 LidarType       = 'CircularCW'; % [4BeamPulsed/CircularCW]
@@ -71,7 +74,7 @@ switch LidarType
 end
 
 % change Lidar file
-% ManipulateTXTFile(LidarFile,'2       WeightingType','0       WeightingType'); % disable lidar volume for a point measurement
+ManipulateTXTFile(LidarFile,'2       WeightingType','0       WeightingType'); % disable lidar volume for a point measurement
 ManipulateTXTFile(LidarFile,'True        NearestInterpFlag','False        NearestInterpFlag'); % change the grid interpolation to linear
 
 
@@ -94,8 +97,8 @@ LDP.deltaphi = -R.PC_RefSpd * deltat;   % rad — at rated speed
 R.StaticWind        = [0   10.0000   11.0000   12.0000   13.0000   14.0000   15.0000   16.0000   17.0000   18.0000   19.0000   20.0000   21.0000   22.0000   23.0000   24.0000   25.0000   26.0000   27.0000   28.0000   29.0000   30.0000]; % Wind speed  values in static pitch curve [m/s]
 R.StaticPitch       = [0         0    0.0552    0.1085    0.1451    0.1749    0.2011    0.2250    0.2473    0.2682    0.2882    0.3072    0.3255    0.3432    0.3603    0.3769    0.3930    0.4087    0.4240    0.4389    0.4535    0.4679]; % Pitch angle values in static pitch curve [rad]
 
-%% Run FBFF with IPC
-for i =1:length(wind_cases)
+%% Run FBFF with IPC 
+for i =1:length(wind_cases) % Run for nGains x 4 shears
     for j =1:length(verticalGains)
     clear FAST_SFunc 
     clear OpenFAST_ROSCO_LDP_FFP_with_FFIPC
@@ -132,7 +135,7 @@ for i =1:length(wind_cases)
 
 %% plot results
 
-% wind speed + blade pitch + rotational speed + tower base moment 
+    % wind speed + blade pitch + rotational speed + tower base moment 
     % figure
     % subplot(4,1,1);
     % hold on; grid on; box on
@@ -158,18 +161,9 @@ for i =1:length(wind_cases)
     % ylabel({'TwrBsMyt';'[MNm]'});
     % xlabel('time [s]')
     % linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
-    % xlim([0 600])
+    % xlim([500 600])
 
-% out of plane moment
-    
-    % figure(2)
-    % hold on; grid on; box on
-    % plot(FBFFIPC.Time, FBFFIPC.RootMyb1);
-    % 
-    % ylabel({'RootMy';'[MNm]'});
-    % xlabel('time [s]')
-    % linkaxes(findobj(gcf, 'Type', 'Axes'),'x');
-    
+    % BldPitch1 + RootMyb1 + M_V
     figure
     subplot(3,1,1)
     hold on; grid on; box on
@@ -201,7 +195,6 @@ end
 % plot(verticalGains, M_V_final,'-o',LineWidth=2);
 % xlabel('Vertical Gain');
 % ylabel('Vertical Moment [kNm]');
-% ResizeAndSaveFigure(16,9,'HVFF_Vgain_Results.fig')
 
 %% Plot vertical gains - oop moment amplitude
 % figure
@@ -224,12 +217,12 @@ end
 
 %% plot shear
 
-figure;
-hold on; grid on; box on
-plot(SimOutFBFF.logsout.get('deltaV').Values);
-xlabel('time [s]')
-ylabel('Shear [(m/s)/m]')
-legend('Vertical Shear','Location','northwest');
+% figure;
+% hold on; grid on; box on
+% plot(SimOutFBFF.logsout.get('deltaV').Values);
+% xlabel('time [s]')
+% ylabel('Shear [(m/s)/m]')
+% legend('Vertical Shear','Location','northwest');
 % ylim([0.012 0.026])
 
 % figure;
@@ -255,23 +248,10 @@ legend('Vertical Shear','Location','northwest');
 
 
 %%
-% revert the inflow change
-% ManipulateTXTFile(inflowFile,wind_cases(end),'"Wind/ECD_VrPlus2mps"');
-
 % Turn back on DOFs
 ManipulateTXTFile(elastoFile,'False                   TwFADOF1','True                   TwFADOF1');
 ManipulateTXTFile(elastoFile,'False                   TwSSDOF1','True                   TwSSDOF1');
 ManipulateTXTFile(elastoFile,'0.0                   ShftTilt','-6.0                   ShftTilt');
 
-% ManipulateTXTFile(LidarFile,'0       WeightingType','2       WeightingType'); % disable lidar volume for a point measurement
+ManipulateTXTFile(LidarFile,'0       WeightingType','2       WeightingType'); % disable lidar volume for a point measurement
 ManipulateTXTFile(LidarFile,'False        NearestInterpFlag','True        NearestInterpFlag'); % change the grid interpolation to linear
-
-%% % display results
-% RotSpeed_0  = 7.56;     % [rpm]
-% TwrBsMyt_0  = 158.3e3;  % [kNm]
-% t_Start     = 0;        % [s]
-% 
-% Cost = (max(abs(FBFFIPC.RotSpeed(FBFFIPC.Time>=t_Start)-RotSpeed_0))) / RotSpeed_0 ...
-%      + (max(abs(FBFFIPC.TwrBsMyt(FBFFIPC.Time>=t_Start)-TwrBsMyt_0))) / TwrBsMyt_0;
-% 
-% fprintf('Cost for Summer Games 2024 ("FF_IPC"):  %f \n',Cost);

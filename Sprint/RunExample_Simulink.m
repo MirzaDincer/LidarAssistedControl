@@ -22,8 +22,6 @@ TMax                = 50; % [s]
 
 % IPC parameters
 IPC = [];
-%static gain for Vertical component
-IPC.FF.gH = 0; %static gain for Horizontal component
 
 switch LidarType
     case '4BeamPulsed'
@@ -40,8 +38,6 @@ switch LidarType
         IPC.FB.Kp               = 5.3e-7;
         IPC.FB.Ti               = 4;
         IPC.FF.gV               = 1.4;
-        IPC.FlagLPF             = 0;            % [0/1]     Enable low-pass filter (flag)
-        IPC.omega_cutoff        = 0.1;          % [rad/s]   Corner frequency (-3dB) of the low-pass filter
     case 'CircularCW'
         % configuration from LDP_v1_CircularCW.IN and FFP_v1_CircularCW.IN
         LDP.NumberOfBeams       = 50;           % [-]       Number of beams measuring at different directions               
@@ -57,8 +53,6 @@ switch LidarType
         IPC.FB.Kp               = 5.3e-7;
         IPC.FB.Ti               = 4;
         IPC.FF.gV               = 1.4;
-        IPC.FlagLPF             = 0;
-        IPC.omega_cutoff        = 0.25;
 end
 
 
