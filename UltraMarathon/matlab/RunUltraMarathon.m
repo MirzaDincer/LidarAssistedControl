@@ -31,13 +31,23 @@ N_REF       = 2e6/(20*8760)*12;                         % [-]           fraction
 Parameter               = NREL5MWDefaultParameter_FBNREL(Parameter);  % controller parameters
 LDP.NumberOfBeams       = 4;                            % [-]           Number of beams measuring at different directions               
 LDP.AngleToCenterline   = 19.176;                       % [deg]         Angle around centerline
-LDP.FlagLPF             = 1;                            % [0/1]         Enable low-pass filter (flag)
+LDP.FlagLPF             = 0;                            % [0/1]         Enable low-pass filter (flag)
 LDP.omega_cutoff        = 0.13;                         % [rad/s]       Corner frequency (-3dB) of the low-pass filter
 LDP.T_buffer            = 0.2;                          % [s]           Buffer time for filtered REWS signal
 IndexGate               = 1;                            % [-]           IndexGate
 GradientStaticPitch     = deg2rad(1);                   % [rad/(m/s)]   Gradient in static pitch curve for feedforward controller
-clear  LDP_v3
+% clear  LDP_v3
 
+LDP.GateDistances     = [50 65 80 100 115 130 145 160 175 200]; % taken from SummerGames2026 pdf file
+LDP.U0     = 18;          % design/initial mean speed [m/s]
+LDP.Iref   = 0.14;        % PLACEHOLDER (IEC class B), needs to be checked for which class should be used
+LDP.L_u    = 8.1*42;      % IEC Kaimal length scale [m]
+LDP.q_per_m = 3e-6;       % starter value from claude, not tuned. variable for process noise, higher values trusts more the new measurement, trust less for advection 
+LDP.R      = 0.0033;      % starter value from Zhang & Zhao 2021, not tuned. measurement noise
+LDP.alphaU = 1/240;       % ~60 s time constant at ~4 updates/s, needs to be checked
+clear LDP_KF_Kaimal
+
+ 
 %% simulation feedback only (should not be changed)
 
 % allocation and initialization
@@ -95,8 +105,8 @@ for i_t=1:n_t-1
     % Second discipline (Load Reduction): Provide u_ThisStep only based on current (i_t) or past lidar signals and turbine signals from y_ThisStep
 
     % simple lidar data processing
-    v_0L(i_t)               = LDP_v3(isValid(i_t,IndexGate),beamID(i_t),lineOfSightWindSpeed(i_t,IndexGate),dt,LDP);
-
+%     v_0L(i_t)               = LDP_v3(isValid(i_t,IndexGate),beamID(i_t),lineOfSightWindSpeed(i_t,IndexGate),dt,LDP);
+     v_0L(i_t) = LDP_KF_Kaimal(isValid(i_t,:), beamID(i_t), lineOfSightWindSpeed(i_t,:), dt, LDP);
     % calculate combined feedback-feedforward controller
     WindAcceleration        = (v_0L(i_t)-v_0L(max(i_t-1,1)))/dt;
     u_FF_ThisStep           = WindAcceleration*GradientStaticPitch; % simple collective pitch feedforward controller
